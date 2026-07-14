@@ -34,8 +34,43 @@ with tab1:
         "or write your own."
     )
 
+    st.markdown("#### Contact Information")
+    c1, c2 = st.columns(2)
+    with c1:
+        first_name = st.text_input("First Name")
+        phone = st.text_input("Phone Number")
+    with c2:
+        last_name = st.text_input("Last Name")
+        email = st.text_input("E-mail")
+
+    st.markdown("#### Case Type")
+    case_type_selected = st.selectbox(
+        "Select the option that best matches your situation:",
+        [
+            "— Case Type —",
+            "— Common Cases —",
+            "Landlord/Tenant Dispute",
+            "Personal Injury",
+            "Employment Dispute",
+            "— All Cases —",
+            "Contract Dispute",
+            "Workers' Compensation",
+            "Criminal Defense",
+            "Family Law",
+            "Immigration",
+            "Bankruptcy",
+            "Other",
+        ],
+    )
+    st.caption(
+        "Note: this dropdown is for the client's convenience only — the "
+        "system below independently reads the full description to "
+        "determine actual case type(s), the same way a real intake "
+        "specialist would rather than relying on a client's own guess."
+    )
+
     example = st.selectbox(
-        "Try an example:",
+        "Or, load an example description:",
         [
             "— choose an example —",
             "Landlord/tenant (should be accepted)",
@@ -89,7 +124,7 @@ with tab1:
     }
 
     default_text = example_texts.get(example, "")
-    inquiry_text = st.text_area("Inquiry / request text:", value=default_text, height=120)
+    inquiry_text = st.text_area("Please describe what happened:", value=default_text, height=120)
 
     source = st.radio(
         "Simulated source (for the dashboard tab):",
@@ -97,18 +132,29 @@ with tab1:
         horizontal=True,
     )
 
-    if st.button("Submit", type="primary"):
+    if st.button("See if you qualify", type="primary"):
         if not inquiry_text.strip():
-            st.warning("Please enter some text first.")
+            st.warning("Please describe what happened first.")
         else:
             with st.spinner("Processing..."):
                 result = handle_request(inquiry_text, source=source)
+                # Attach client-provided fields for side-by-side comparison
+                # against the AI's independent classification — this is
+                # the "client guessed X, AI found Y" demo moment.
+                result["client_provided"] = {
+                    "name": f"{first_name} {last_name}".strip(),
+                    "phone": phone,
+                    "email": email,
+                    "selected_case_type": case_type_selected,
+                }
                 item_id = queue.add_item(result)
 
+            client_display_name = first_name if first_name else "there"
             st.success(
-                f"✅ Submitted. This has been routed and added to the staff "
-                f"review queue (item #{item_id}). No action has been taken "
-                f"automatically — a staff member must review it."
+                f"✅ Thanks, {client_display_name}! We've received your information "
+                f"and it's been added to our review queue (item #{item_id}). "
+                f"A member of our team will follow up with you shortly. "
+                f"No action has been taken automatically."
             )
 
             with st.expander("🔍 Behind the scenes (what the client wouldn't see)"):
@@ -134,6 +180,28 @@ with tab2:
                     st.caption(f"Source: {result.get('source', 'unspecified')} | "
                                f"Classification: {classification['category']} "
                                f"(confidence: {classification['confidence']})")
+
+                    client_info = result.get("client_provided")
+                    if client_info:
+                        st.caption(
+                            f"👤 {client_info.get('name') or 'N/A'} | "
+                            f"{client_info.get('phone') or 'no phone'} | "
+                            f"{client_info.get('email') or 'no email'}"
+                        )
+                        if routed_to == "intake_triage_agent" and result["agent_result"]:
+                            ai_types = [i["case_type"] for i in result["agent_result"]["issues"]]
+                            selected = client_info.get("selected_case_type", "")
+                            if selected and selected not in ("— Case Type —",) and not selected.startswith("—"):
+                                if len(ai_types) > 1 or (ai_types and ai_types[0].replace("_", " ").lower() not in selected.lower()):
+                                    st.warning(
+                                        f"⚠️ Client selected **\"{selected}\"** from the dropdown, but "
+                                        f"the AI identified **{len(ai_types)}** issue(s) from the actual "
+                                        f"description: {', '.join(ai_types)}. This is exactly why the "
+                                        f"description matters more than the dropdown alone."
+                                    )
+                                else:
+                                    st.caption(f"Client selected: \"{selected}\" (matches AI classification)")
+
                     st.write(f"**Original request:** {result['input_preview']}")
                     st.write(f"**AI reasoning:** {classification['reasoning']}")
 

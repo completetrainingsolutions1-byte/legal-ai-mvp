@@ -82,21 +82,34 @@ EXTRACT_TOOL = [
 # ---------- Classification ----------
 
 def classify_mock(text: str) -> dict:
-    """Keyword-based stand-in for the LLM classification call."""
+    """
+    Keyword-based stand-in for the LLM classification call.
+
+    Design note: rather than requiring specific "intake-sounding" phrases
+    (which real inquiries often don't use — see the workplace injury
+    example, which never says "can you help"), this defaults to "intake"
+    for any reasonably substantive message that isn't clearly a staff
+    drafting request. Only very short, low-content messages fall through
+    to "unclear". This mirrors how a real front-line intake process
+    works: assume it's a potential client matter unless it's obviously
+    something else.
+    """
     lower = text.lower()
     drafting_signals = ["draft a", "please draft", "write a demand letter",
                          "write a letter", "draft a letter", "correspondence to"]
-    intake_signals = ["i need a lawyer", "can you help", "what can i do",
-                       "my landlord", "i was", "happened to me"]
 
     if any(s in lower for s in drafting_signals):
         return {"category": "drafting", "confidence": "medium",
                 "reasoning": "Matched drafting-request keywords (mock heuristic)."}
-    if any(s in lower for s in intake_signals):
-        return {"category": "intake", "confidence": "medium",
-                "reasoning": "Matched client-inquiry keywords (mock heuristic)."}
-    return {"category": "unclear", "confidence": "low",
-            "reasoning": "No clear signal for either category (mock heuristic)."}
+
+    word_count = len(text.split())
+    if word_count < 8:
+        return {"category": "unclear", "confidence": "low",
+                "reasoning": "Message too short/vague to classify confidently (mock heuristic)."}
+
+    return {"category": "intake", "confidence": "medium",
+            "reasoning": "Substantive non-drafting message; treated as a client "
+                         "inquiry by default (mock heuristic)."}
 
 
 def classify_live(text: str) -> dict:
@@ -156,7 +169,7 @@ def extract_facts_live(text: str) -> dict:
 
 # ---------- Orchestrator ----------
 
-def handle_request(text: str) -> dict:
+def handle_request(text: str, source: str = "unspecified") -> dict:
     log = []
     timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -193,6 +206,7 @@ def handle_request(text: str) -> dict:
 
     final_result = {
         "timestamp": timestamp,
+        "source": source,
         "input_preview": text[:200],
         "classification": classification,
         "routed_to": routed_to,
