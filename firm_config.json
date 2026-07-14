@@ -1,0 +1,42 @@
+{
+  "firm_name": "Example Law Group",
+  "practice_areas": {
+    "landlord_tenant": {
+      "min_claim_value": 250,
+      "allowed_states": ["FL"],
+      "notes": "Firm handles security deposit and habitability disputes only."
+    },
+    "personal_injury": {
+      "min_claim_value": 1000,
+      "allowed_states": ["FL", "GA"],
+      "notes": "Firm requires incident to have occurred within the last 2 years."
+    },
+    "contract_dispute": {
+      "min_claim_value": 500,
+      "allowed_states": ["FL"],
+      "notes": "Firm handles consumer and small-business contract disputes."
+    },
+    "employment": {
+      "min_claim_value": 0,
+      "allowed_states": ["FL"],
+      "notes": "Firm handles wage disputes and wrongful termination inquiries."
+    }
+  },
+  "not_handled": ["criminal", "family_law", "immigration", "bankruptcy"],
+  "past_case_examples": {
+    "landlord_tenant": [
+      {"outcome": "accepted", "claim_value": 1800, "note": "Deposit dispute, resolved via demand letter."},
+      {"outcome": "declined", "claim_value": 150, "note": "Below firm minimum, referred to small claims self-help."}
+    ],
+    "personal_injury": [
+      {"outcome": "accepted", "claim_value": 15000, "note": "Auto accident, within statute of limitations."},
+      {"outcome": "declined", "claim_value": 800, "note": "Below firm minimum claim value."}
+    ],
+    "contract_dispute": [
+      {"outcome": "accepted", "claim_value": 5000, "note": "B2B contract breach, clear damages."}
+    ],
+    "employment": [
+      {"outcome": "accepted", "claim_value": 0, "note": "Wage dispute, no minimum applies."}
+    ]
+  }
+}
