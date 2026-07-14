@@ -41,7 +41,7 @@ def check_intake_criteria(case_type: str, claim_value: float, state: str) -> dic
     if case_type in PRACTICE_AREAS_NOT_HANDLED:
         return {
             "meets_criteria": False,
-            "reason": f"{FIRM_NAME} does not handle {case_type} matters.",
+            "reason": f"{FIRM_NAME} does not handle {case_type.replace('_', ' ')} matters.",
         }
 
     if case_type not in INTAKE_CRITERIA:
@@ -55,7 +55,7 @@ def check_intake_criteria(case_type: str, claim_value: float, state: str) -> dic
     if state not in rules["allowed_states"]:
         return {
             "meets_criteria": False,
-            "reason": f"{FIRM_NAME} does not handle {case_type} matters outside {rules['allowed_states']}.",
+            "reason": f"{FIRM_NAME} does not handle {case_type.replace('_', ' ')} matters outside {rules['allowed_states']}.",
         }
 
     if claim_value < rules["min_claim_value"]:

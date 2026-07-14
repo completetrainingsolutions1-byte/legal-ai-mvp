@@ -25,7 +25,8 @@ REQUIRED_FIELDS = [
 ]
 
 SYSTEM_PROMPT = """You are a legal drafting assistant supporting a law firm's staff.
-You draft correspondence (demand letters, client letters) from the facts provided.
+You draft correspondence (demand letters, client letters, decline letters)
+from the facts provided.
 
 STRICT RULES:
 1. Use ONLY the facts explicitly provided in the input. Never invent names,
@@ -36,7 +37,12 @@ STRICT RULES:
 3. This draft is for attorney review before it is sent. Do not include
    any final legal conclusions ("you are liable," "you must pay") —
    phrase claims and requests neutrally, as a draft awaiting review.
-4. Output the letter only. No preamble, no explanation, no markdown formatting.
+4. For document_type "decline_letter": this letter is FROM the firm TO
+   a prospective client the firm cannot represent. Do NOT use "on behalf
+   of" framing (that's for demand letters representing an existing
+   client). Be polite, brief, and include a note that the person should
+   seek other counsel and that deadlines continue to run regardless.
+5. Output the letter only. No preamble, no explanation, no markdown formatting.
 """
 
 
@@ -69,6 +75,38 @@ def call_claude_mock(user_prompt: str, facts: dict) -> str:
     a deliberately-missing fact to prove the [VERIFY] pattern works.
     """
     today = datetime.now().strftime("%B %d, %Y")
+
+    if facts["document_type"] == "decline_letter":
+        # Different framing: this letter is FROM the firm TO the
+        # prospective client, not "on behalf of" anyone.
+        return f"""{today}
+
+{facts['recipient_name']}
+
+Re: {facts['matter_summary']}
+
+Dear {facts['recipient_name']},
+
+Thank you for reaching out to us regarding the matter described above.
+After reviewing the information you provided, we have determined that
+we are unable to represent you in this matter.
+
+{facts['requested_outcome']}
+
+{facts.get('additional_context', '')}
+
+We wish you the best in resolving this matter and encourage you to
+seek the advice of another attorney, if needed. Please note that this
+message does not constitute legal advice, and any deadlines that may
+apply to your situation continue to run regardless of this letter.
+
+This draft has not been reviewed by an attorney and should not be sent
+in its current form.
+
+Sincerely,
+[VERIFY: attorney name / signature block]
+"""
+
     return f"""{today}
 
 {facts['recipient_name']}

@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 
 from intake_triage_agent import triage_inquiry
 from drafting_agent import draft_document, validate_input, ValidationError
+from intake_criteria_data import FIRM_NAME
 
 MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"
 
@@ -169,7 +170,19 @@ def extract_facts_live(text: str) -> dict:
 
 # ---------- Orchestrator ----------
 
-def handle_request(text: str, source: str = "unspecified") -> dict:
+def build_decline_facts(issue: dict, client_name: str) -> dict:
+    """Builds Drafting Agent input facts for an auto-drafted decline letter."""
+    return {
+        "document_type": "decline_letter",
+        "client_name": FIRM_NAME,
+        "recipient_name": client_name or "[VERIFY: prospective client name]",
+        "matter_summary": f"Inquiry regarding a potential {issue['case_type'].replace('_', ' ')} matter.",
+        "requested_outcome": issue["reasoning"],
+        "additional_context": f"AI-suggested next step: {issue['suggested_next_step']}",
+    }
+
+
+def handle_request(text: str, source: str = "unspecified", client_name: str = "") -> dict:
     log = []
     timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -179,10 +192,27 @@ def handle_request(text: str, source: str = "unspecified") -> dict:
     category = classification["category"]
     result_payload = None
     routed_to = None
+    auto_drafted_declines = []
 
     if category == "intake":
         routed_to = "intake_triage_agent"
         result_payload = triage_inquiry(text)
+
+        # Auto-draft a decline letter for each issue the agent recommends
+        # declining — see conversation: a decline shouldn't just be an
+        # internal note nobody acts on.
+        for issue in result_payload["issues"]:
+            if issue["recommendation"] == "recommend_decline":
+                decline_facts = build_decline_facts(issue, client_name)
+                try:
+                    decline_draft = draft_document(decline_facts)
+                    decline_draft["for_issue"] = issue["case_type"]
+                    auto_drafted_declines.append(decline_draft)
+                    log.append({"step": "auto_draft_decline",
+                                "case_type": issue["case_type"], "status": "drafted"})
+                except ValidationError as e:
+                    log.append({"step": "auto_draft_decline",
+                                "case_type": issue["case_type"], "status": f"failed: {e}"})
 
     elif category == "drafting":
         routed_to = "drafting_agent"
@@ -210,6 +240,7 @@ def handle_request(text: str, source: str = "unspecified") -> dict:
         "input_preview": text[:200],
         "classification": classification,
         "routed_to": routed_to,
+        "auto_drafted_declines": auto_drafted_declines,
         "needs_human_review": True,  # always true, regardless of path
         "agent_result": result_payload,
         "orchestrator_log": log,

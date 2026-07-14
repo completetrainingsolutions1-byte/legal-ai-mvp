@@ -13,6 +13,7 @@ import streamlit as st
 from orchestrator import handle_request
 from intake_criteria_data import FIRM_NAME
 import review_queue as queue
+import crm_connector
 
 st.set_page_config(page_title=f"{FIRM_NAME} — AI Intake & Drafting (Demo)", layout="wide")
 
@@ -137,12 +138,10 @@ with tab1:
             st.warning("Please describe what happened first.")
         else:
             with st.spinner("Processing..."):
-                result = handle_request(inquiry_text, source=source)
-                # Attach client-provided fields for side-by-side comparison
-                # against the AI's independent classification — this is
-                # the "client guessed X, AI found Y" demo moment.
+                full_name = f"{first_name} {last_name}".strip()
+                result = handle_request(inquiry_text, source=source, client_name=full_name)
                 result["client_provided"] = {
-                    "name": f"{first_name} {last_name}".strip(),
+                    "name": full_name,
                     "phone": phone,
                     "email": email,
                     "selected_case_type": case_type_selected,
@@ -215,6 +214,22 @@ with tab2:
                             st.write(f"- Reasoning: {issue['reasoning']}")
                             st.write(f"- Suggested next step: {issue['suggested_next_step']}")
 
+                        declines = result.get("auto_drafted_declines", [])
+                        if declines:
+                            st.markdown("**📝 Auto-drafted decline letter(s):**")
+                            for d in declines:
+                                with st.expander(f"Decline draft — {d['for_issue']}"):
+                                    st.text_area(
+                                        "", value=d["draft_text"], height=200,
+                                        key=f"decline_{item['id']}_{d['for_issue']}",
+                                        label_visibility="collapsed",
+                                    )
+                                    st.caption(
+                                        "Generated automatically because the AI recommended "
+                                        "declining this issue. Still requires attorney review "
+                                        "before sending — same as any other draft."
+                                    )
+
                     elif routed_to == "drafting_agent" and result["agent_result"]:
                         ar = result["agent_result"]
                         st.write("**Draft:**")
@@ -229,12 +244,16 @@ with tab2:
                 with col2:
                     if st.button("✅ Approve", key=f"approve_{item['id']}"):
                         queue.update_status(item["id"], "approved")
+                        crm_result = crm_connector.push_to_crm("create_matter", item)
+                        st.session_state[f"crm_result_{item['id']}"] = crm_result
                         st.rerun()
                     if st.button("✏️ Needs Edit", key=f"edit_{item['id']}"):
                         queue.update_status(item["id"], "needs_edit")
                         st.rerun()
                     if st.button("❌ Reject", key=f"reject_{item['id']}"):
                         queue.update_status(item["id"], "rejected")
+                        crm_result = crm_connector.push_to_crm("log_decline", item)
+                        st.session_state[f"crm_result_{item['id']}"] = crm_result
                         st.rerun()
 
     st.divider()
@@ -243,6 +262,11 @@ with tab2:
     if resolved:
         for item in resolved:
             st.caption(f"#{item['id']} — {item['status']} — {item['reviewed_at']}")
+            crm_result = st.session_state.get(f"crm_result_{item['id']}")
+            if crm_result:
+                with st.expander(f"🔗 CRM sync details for #{item['id']}"):
+                    st.info(crm_result["message"])
+                    st.json(crm_result["payload"])
     else:
         st.caption("No resolved items yet.")
 

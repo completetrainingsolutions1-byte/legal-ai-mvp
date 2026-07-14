@@ -1,5 +1,6 @@
 {
   "firm_name": "Example Law Group",
+  "crm_system": "Clio",
   "practice_areas": {
     "landlord_tenant": {
       "min_claim_value": 250,
