@@ -227,7 +227,8 @@ if __name__ == "__main__":
         print(f"Needs human review: {result['needs_human_review']}")
         if result["agent_result"]:
             if result["routed_to"] == "intake_triage_agent":
-                print(f"  -> Recommendation: {result['agent_result']['recommendation']}")
+                for idx, issue in enumerate(result["agent_result"]["issues"], 1):
+                    print(f"  -> Issue {idx} ({issue['case_type']}): {issue['recommendation']}")
             elif result["routed_to"] == "drafting_agent":
                 print(f"  -> Draft generated (contains VERIFY flags: "
                       f"{result['agent_result']['contains_verify_flags']})")

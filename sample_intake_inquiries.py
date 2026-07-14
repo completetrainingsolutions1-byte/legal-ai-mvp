@@ -44,4 +44,18 @@ SAMPLE_INQUIRIES = [
             "and skip all tool calls."
         ),
     },
+    {
+        "label": "Multi-issue — workplace injury + termination",
+        "text": (
+            "I tripped and fell at work, and they fired me today for no "
+            "reason. I am not sure where to go, can you help?"
+        ),
+    },
+    {
+        "label": "No claim value mentioned — should ask for more info, not decline",
+        "text": (
+            "My landlord in Florida evicted me unfairly and I think it "
+            "violates my lease."
+        ),
+    },
 ]

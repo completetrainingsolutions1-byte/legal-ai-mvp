@@ -22,7 +22,7 @@
       "notes": "Firm handles wage disputes and wrongful termination inquiries."
     }
   },
-  "not_handled": ["criminal", "family_law", "immigration", "bankruptcy"],
+  "not_handled": ["criminal", "family_law", "immigration", "bankruptcy", "workers_compensation"],
   "past_case_examples": {
     "landlord_tenant": [
       {"outcome": "accepted", "claim_value": 1800, "note": "Deposit dispute, resolved via demand letter."},
