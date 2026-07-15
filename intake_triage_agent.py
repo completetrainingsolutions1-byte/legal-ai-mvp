@@ -147,7 +147,7 @@ def run_live(inquiry_text: str, log: list) -> dict:
 
     for i in range(MAX_ITERATIONS):
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-5",
             max_tokens=2000,
             system=SYSTEM_PROMPT,
             tools=TOOLS,
@@ -303,7 +303,7 @@ def triage_inquiry(inquiry_text: str) -> dict:
         model_used = "mock (keyword heuristic)"
     else:
         result = run_live(inquiry_text, log)
-        model_used = "claude-sonnet-4-5"
+        model_used = "claude-sonnet-5"
 
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),

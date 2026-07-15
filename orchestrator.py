@@ -117,7 +117,7 @@ def classify_live(text: str) -> dict:
     import anthropic
     client = anthropic.Anthropic()
     response = client.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-5",
         max_tokens=500,
         system=CLASSIFY_SYSTEM_PROMPT,
         tools=CLASSIFY_TOOL,
@@ -156,7 +156,7 @@ def extract_facts_live(text: str) -> dict:
     import anthropic
     client = anthropic.Anthropic()
     response = client.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-5",
         max_tokens=500,
         system=EXTRACT_SYSTEM_PROMPT,
         tools=EXTRACT_TOOL,

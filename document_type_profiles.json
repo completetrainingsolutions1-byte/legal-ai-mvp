@@ -1,0 +1,61 @@
+{
+  "lease": {
+    "display_name": "Lease Agreement",
+    "detection_keywords": ["landlord", "tenant", "lease term", "premises", "rent"],
+    "risk_keywords": {
+      "security deposit": "Security deposit clause -- check the amount and conditions for return.",
+      "sublet": "Subletting/assignment restriction -- check whether subletting is allowed.",
+      "subletting": "Subletting/assignment restriction -- check whether subletting is allowed.",
+      "maintenance": "Maintenance responsibility clause -- check who is responsible for repairs.",
+      "late fee": "Late fee clause -- check the amount and any grace period.",
+      "early termination": "Early termination clause -- check penalties for breaking the lease early.",
+      "automatically renew": "Renewal/holdover clause -- check automatic renewal terms.",
+      "holdover": "Holdover clause -- check what happens if tenant stays past the lease term.",
+      "pet": "Pet policy -- check restrictions and fees.",
+      "eviction": "Eviction clause -- check grounds and notice requirements."
+    },
+    "expected_clauses": [
+      {"description": "security deposit amount and return conditions", "satisfied_by": ["security deposit"]},
+      {"description": "maintenance and repair responsibility", "satisfied_by": ["maintenance"]},
+      {"description": "renewal or holdover terms", "satisfied_by": ["automatically renew", "holdover", "renewal"]},
+      {"description": "termination conditions and notice period", "satisfied_by": ["early termination", "eviction"]}
+    ],
+    "summary_fields": [
+      {"name": "Property", "category": "Executive Summary"},
+      {"name": "Landlord", "category": "Executive Summary"},
+      {"name": "Tenant", "category": "Executive Summary"},
+      {"name": "Governing Law", "category": "Executive Summary"},
+      {"name": "Monthly Rent", "category": "Financial Terms"},
+      {"name": "Security Deposit", "category": "Financial Terms"},
+      {"name": "Late Fee", "category": "Financial Terms"},
+      {"name": "Renewal Terms", "category": "Term & Renewal"}
+    ]
+  },
+  "nda": {
+    "display_name": "Non-Disclosure Agreement (NDA)",
+    "detection_keywords": ["confidential information", "non-disclosure", "disclosing party", "receiving party", "nda"],
+    "risk_keywords": {
+      "confidential information": "Definition of confidential information -- check how broadly or narrowly it's scoped.",
+      "return or destroy": "Return/destruction of materials clause -- check what happens to confidential materials after the relationship ends.",
+      "residual": "Residuals clause -- may allow broader future use of retained knowledge than expected.",
+      "exclusions": "Exclusions from confidential information -- check standard carve-outs are present (publicly known, independently developed, etc.).",
+      "injunctive relief": "Injunctive relief clause -- allows a court order without needing to prove monetary damages.",
+      "term of this agreement": "Duration of confidentiality obligation -- check how long the obligation lasts.",
+      "governing law": "Governing law clause -- specifies which state's law applies to disputes."
+    },
+    "expected_clauses": [
+      {"description": "definition of confidential information", "satisfied_by": ["confidential information"]},
+      {"description": "duration of the confidentiality obligation", "satisfied_by": ["term of this agreement", "period of"]},
+      {"description": "exclusions/permitted disclosures", "satisfied_by": ["exclusions", "publicly known", "independently developed"]},
+      {"description": "return or destruction of materials upon termination", "satisfied_by": ["return or destroy", "return of materials"]}
+    ],
+    "summary_fields": [
+      {"name": "Disclosing Party", "category": "Executive Summary"},
+      {"name": "Receiving Party", "category": "Executive Summary"},
+      {"name": "Governing Law", "category": "Executive Summary"},
+      {"name": "Confidentiality Period", "category": "Term"},
+      {"name": "Residuals Clause", "category": "Confidentiality Scope"},
+      {"name": "Injunctive Relief", "category": "Remedies"}
+    ]
+  }
+}

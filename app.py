@@ -9,21 +9,25 @@ Demo UI — two tabs:
 Run with: streamlit run app.py
 """
 
+import os
 import streamlit as st
 from orchestrator import handle_request
 from intake_criteria_data import FIRM_NAME
 import review_queue as queue
 import crm_connector
+from document_extraction import extract_paragraphs, format_for_prompt
+from document_analysis_agent import analyze_document, answer_question, detect_document_type, DOCUMENT_TYPE_PROFILES
 
 st.set_page_config(page_title=f"{FIRM_NAME} — AI Intake & Drafting (Demo)", layout="wide")
 
 st.title(f"⚖️ {FIRM_NAME} — AI Intake & Drafting System")
 st.caption("Portfolio demo — synthetic data only, no real client information")
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "📥 Submit Inquiry (simulated website form)",
     "🗂️ Staff Review Queue",
     "📊 Dashboard",
+    "📄 Document Analysis",
 ])
 
 # ---------------- TAB 1: Simulated intake ----------------
@@ -320,3 +324,143 @@ with tab3:
         st.bar_chart(routing_counts)
 
         st.caption(f"Total items in queue: {len(all_items)}")
+
+# ---------------- TAB 4: Document Analysis ----------------
+with tab4:
+    st.subheader("Document Analysis Assistant")
+    st.write(
+        "Upload a document for an initial AI-assisted read: summary, "
+        "notable provisions, and follow-up Q&A with citations to the "
+        "specific paragraph they came from."
+    )
+    st.caption(
+        "🔒 Document content is NOT saved to this system's shared logs "
+        "or CRM sync — it stays in this session only, unlike the intake "
+        "and drafting tabs. This is a deliberate confidentiality boundary."
+    )
+
+    uploaded_file = st.file_uploader(
+        "Upload a document (.txt, .pdf, or .docx)",
+        type=["txt", "pdf", "docx"],
+    )
+
+    sample_options = {
+        "-- none --": None,
+        "Lease Agreement (sample)": "sample_documents/lease_agreement.txt",
+        "NDA (sample)": "sample_documents/nda.txt",
+        "Services Agreement (sample, general)": "sample_documents/services_agreement.txt",
+    }
+    sample_choice = st.selectbox("Or use a built-in sample document:", list(sample_options.keys()))
+
+    paragraphs = None
+    doc_label = None
+
+    if sample_options[sample_choice]:
+        paragraphs = extract_paragraphs(sample_options[sample_choice])
+        doc_label = sample_choice
+    elif uploaded_file is not None:
+        temp_path = os.path.join("outputs", f"_temp_{uploaded_file.name}")
+        os.makedirs("outputs", exist_ok=True)
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        try:
+            paragraphs = extract_paragraphs(temp_path)
+            doc_label = uploaded_file.name
+        except Exception as e:
+            st.error(f"Could not extract text: {e}")
+        finally:
+            os.remove(temp_path)  # confidentiality: don't leave the file on disk
+
+    if paragraphs:
+        st.success(f"✅ Loaded **{doc_label}** — {len(paragraphs)} paragraphs extracted.")
+
+        type_display_names = {v["display_name"]: k for k, v in DOCUMENT_TYPE_PROFILES.items()}
+        type_options = ["Auto-detect"] + list(type_display_names.keys()) + ["General / Other"]
+        doc_type_choice = st.selectbox("Document type:", type_options)
+
+        if st.button("Analyze Document", type="primary"):
+            if doc_type_choice == "Auto-detect":
+                detected_key, confidence = detect_document_type(paragraphs)
+                if detected_key:
+                    resolved_type = detected_key
+                    detect_msg = (f"Auto-detected as **{DOCUMENT_TYPE_PROFILES[detected_key]['display_name']}** "
+                                  f"(confidence: {confidence})")
+                else:
+                    resolved_type = None
+                    detect_msg = "Could not confidently auto-detect a document type — using general analysis."
+            elif doc_type_choice == "General / Other":
+                resolved_type = None
+                detect_msg = "Using general analysis (no document-type-specific profile)."
+            else:
+                resolved_type = type_display_names[doc_type_choice]
+                detect_msg = f"Using **{doc_type_choice}** profile (manually selected)."
+
+            with st.spinner("Analyzing..."):
+                analysis = analyze_document(paragraphs, doc_type=resolved_type)
+                st.session_state["doc_analysis"] = analysis
+                st.session_state["doc_paragraphs"] = paragraphs
+                st.session_state["doc_detect_msg"] = detect_msg
+
+        if "doc_analysis" in st.session_state and st.session_state.get("doc_paragraphs") == paragraphs:
+            analysis = st.session_state["doc_analysis"]
+            st.info(st.session_state.get("doc_detect_msg", ""))
+
+            risk_colors = {"Low": "🟢", "Medium": "🟡", "High": "🔴"}
+            risk = analysis.get("risk_rating", "Unknown")
+            st.markdown(f"### {risk_colors.get(risk, '⚪')} Overall Risk Rating: {risk}")
+
+            st.markdown("#### Executive Summary")
+            st.write(analysis["summary"])
+
+            if analysis.get("structured_summary"):
+                st.markdown("#### Document Details")
+                for category, fields in analysis["structured_summary"].items():
+                    st.markdown(f"**{category}**")
+                    for field_name, value in fields.items():
+                        st.markdown(f"- **{field_name}:** {value}")
+
+            st.markdown("#### Notable Provisions")
+            if analysis["findings"]:
+                for f in analysis["findings"]:
+                    st.markdown(f"- **[{f['citation']}]** {f['finding']}")
+            else:
+                st.write("No notable provisions flagged.")
+
+            if analysis.get("missing_considerations"):
+                st.markdown("#### ⚠️ Possible Gaps (expected but not clearly found)")
+                for m in analysis["missing_considerations"]:
+                    st.markdown(f"- {m}")
+
+            if analysis.get("negotiation_opportunities"):
+                st.markdown("#### 💡 Negotiation Opportunities")
+                for n in analysis["negotiation_opportunities"]:
+                    st.markdown(f"- {n}")
+
+            if analysis.get("attorney_questions"):
+                st.markdown("#### ❓ Questions to Ask the Client")
+                for q in analysis["attorney_questions"]:
+                    st.markdown(f"- {q}")
+
+            st.divider()
+            st.markdown("#### Ask a follow-up question")
+            question = st.text_input(
+                "Question about this document:",
+                placeholder="e.g. What happens if I want to terminate early?",
+            )
+            if st.button("Ask"):
+                if question.strip():
+                    with st.spinner("Searching document..."):
+                        qa = answer_question(paragraphs, question)
+                    st.write("**Answer:**", qa["answer"])
+                    if qa["citations"]:
+                        st.caption(f"Citations: {', '.join(qa['citations'])}")
+                else:
+                    st.warning("Please enter a question first.")
+
+            st.caption(
+                "⚠️ This is an AI-assisted read of the document, not legal "
+                "advice or a final legal conclusion. All findings require "
+                "attorney review against the source document."
+            )
+    else:
+        st.info("Upload a document or check the sample box above to get started.")

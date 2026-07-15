@@ -1,0 +1,39 @@
+SERVICES AGREEMENT
+
+This Services Agreement ("Agreement") is entered into between Example Client Corp ("Client") and Sample Vendor LLC ("Vendor").
+
+1. SCOPE OF SERVICES
+
+Vendor agrees to provide consulting services as described in Exhibit A. Services shall commence on the Effective Date and continue until completion of the deliverables described therein.
+
+2. TERM AND TERMINATION
+
+This Agreement shall remain in effect for twelve (12) months from the Effective Date. Either party may terminate this Agreement for convenience with thirty (30) days written notice. Client may terminate immediately for cause if Vendor breaches any material term.
+
+3. INDEMNIFICATION
+
+Vendor shall indemnify, defend, and hold harmless Client from any and all claims, damages, losses, and expenses, including reasonable attorneys' fees, arising out of or resulting from Vendor's performance of services under this Agreement, regardless of whether such claims arise from Vendor's negligence.
+
+4. LIMITATION OF LIABILITY
+
+Vendor's total liability under this Agreement shall not exceed the fees paid by Client in the twelve (12) months preceding the claim. This limitation shall not apply to claims arising from Vendor's gross negligence or willful misconduct.
+
+5. NON-COMPETE
+
+For a period of two (2) years following termination of this Agreement, Vendor shall not provide similar consulting services to any direct competitor of Client operating within the same metropolitan area.
+
+6. CONFIDENTIALITY
+
+Each party agrees to maintain the confidentiality of the other party's proprietary information disclosed during the course of this Agreement, for a period of five (5) years following termination.
+
+7. DISPUTE RESOLUTION
+
+Any disputes arising under this Agreement shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association. The prevailing party shall be entitled to recover reasonable attorneys' fees.
+
+8. GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of Florida, without regard to its conflict of laws principles.
+
+9. AUTO-RENEWAL
+
+This Agreement shall automatically renew for successive twelve (12) month terms unless either party provides written notice of non-renewal at least sixty (60) days prior to the end of the then-current term.

@@ -139,7 +139,7 @@ def call_claude_live(user_prompt: str) -> str:
 
     client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
     response = client.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-5",
         max_tokens=1000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
@@ -163,7 +163,7 @@ def draft_document(facts: dict) -> dict:
         model_used = "mock"
     else:
         draft_text = call_claude_live(user_prompt)
-        model_used = "claude-sonnet-4-5"
+        model_used = "claude-sonnet-5"
 
     contains_verify_flags = "[VERIFY:" in draft_text
 
