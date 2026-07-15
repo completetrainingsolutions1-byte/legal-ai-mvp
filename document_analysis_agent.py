@@ -51,6 +51,17 @@ GENERIC_RISK_KEYWORDS = {
 
 NOT_SPECIFIED = "Not specified in document"
 
+
+def _keyword_present(keyword, text_lower):
+    """
+    Word-boundary-aware keyword check -- prevents false positives like
+    'rent' matching inside 'current', or 'pet' matching inside
+    'competitor'. This replaced a naive substring check after it
+    produced exactly those false positives during testing.
+    """
+    pattern = r"\b" + re.escape(keyword.lower()) + r"\b"
+    return re.search(pattern, text_lower) is not None
+
 # ---------------------------------------------------------------------
 # MOCK MODE: regex patterns tuned to this project's synthetic samples
 # ---------------------------------------------------------------------
@@ -108,7 +119,7 @@ MOCK_ATTORNEY_QUESTIONS = {
 def detect_document_type(paragraphs):
     """Scores each profile by detection keyword matches; returns (key, confidence)."""
     full_text = " ".join(text for _, text in paragraphs).lower()
-    scores = {dt: sum(1 for kw in p["detection_keywords"] if kw in full_text)
+    scores = {dt: sum(1 for kw in p["detection_keywords"] if _keyword_present(kw, full_text))
               for dt, p in DOCUMENT_TYPE_PROFILES.items()}
     best_type = max(scores, key=scores.get)
     best_score = scores[best_type]
@@ -211,14 +222,14 @@ def analyze_document_mock(paragraphs, doc_type=None):
     for pid, text in paragraphs:
         text_lower = text.lower()
         for keyword, description in risk_keywords.items():
-            if keyword in text_lower and description not in seen_descriptions:
+            if _keyword_present(keyword, text_lower) and description not in seen_descriptions:
                 findings.append({"citation": pid, "keyword": keyword, "finding": description})
                 seen_descriptions.add(description)
 
     missing = []
     if profile:
         for clause in profile["expected_clauses"]:
-            if not any(kw in full_text_lower for kw in clause["satisfied_by"]):
+            if not any(_keyword_present(kw, full_text_lower) for kw in clause["satisfied_by"]):
                 missing.append(clause["description"])
 
     structured_summary = extract_structured_fields_mock(doc_type, full_text) if profile else {}
