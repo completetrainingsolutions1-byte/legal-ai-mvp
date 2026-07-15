@@ -10,6 +10,10 @@ Run with: streamlit run app.py
 """
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import streamlit as st
 from orchestrator import handle_request
 from intake_criteria_data import FIRM_NAME

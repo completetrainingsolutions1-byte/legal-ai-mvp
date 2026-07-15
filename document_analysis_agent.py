@@ -168,14 +168,18 @@ def extract_structured_fields_live(doc_type, document_text):
 
     profile = _get_profile(doc_type)
     field_names = [f["name"] for f in profile["summary_fields"]]
+    # Tool schema property keys must match ^[a-zA-Z0-9_.-]{1,64}$ -- field
+    # names like "Disclosing Party" contain spaces, so map to safe keys.
+    key_for_name = {name: re.sub(r"[^a-zA-Z0-9_.-]", "_", name) for name in field_names}
+    name_for_key = {key: name for name, key in key_for_name.items()}
 
     tool = {
         "name": "submit_structured_summary",
         "description": "Submit extracted field values for this document.",
         "input_schema": {
             "type": "object",
-            "properties": {name: {"type": "string"} for name in field_names},
-            "required": field_names,
+            "properties": {key: {"type": "string"} for key in name_for_key},
+            "required": list(name_for_key.keys()),
         },
     }
 
@@ -201,7 +205,7 @@ Call submit_structured_summary with your extracted values."""
     extracted = {}
     for block in response.content:
         if block.type == "tool_use" and block.name == "submit_structured_summary":
-            extracted = block.input
+            extracted = {name_for_key[key]: value for key, value in block.input.items()}
 
     fields_by_category = {}
     for field_spec in profile["summary_fields"]:
